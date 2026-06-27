@@ -2,7 +2,7 @@ export function Header() {
   return (
     <header className="site-header">
       <nav className="site-nav" aria-label="Primary navigation">
-        <a className="group-name" href="/">
+        <a className="group-name" href={import.meta.env.BASE_URL}>
           World360-AI
         </a>
         <a className="nav-link" href="#projects">
