@@ -1,30 +1,88 @@
-import { useRef, useState, type ReactNode } from 'react'
+import { useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { Image, ScrollControls, useScroll } from '@react-three/drei'
 import * as THREE from 'three'
 
-const CARD_IMAGE_URL = `${import.meta.env.BASE_URL}fluxus.png`
+const CARD_IMAGE_URL = `${import.meta.env.BASE_URL}temp_img.png`
+const MOBIUS_ANGLE_OFFSET = THREE.MathUtils.degToRad(10)
+const MOBIUS_ENDPOINT_TWIST_WIDTH = 0.16
+const MOBIUS_CARD_LENGTH_RATIO = 0.88
 
-type ImageMaterial = THREE.ShaderMaterial & {
-  radius: number
-  zoom: number
+type MobiusCardProps = {
+  coord?: number
+  length?: number
+  height?: number
 }
 
-type CardProps = {
-  position: [number, number, number]
-  rotation: [number, number, number]
-}
-
-function Rig({ children }: { children: ReactNode }) {
-  const groupRef = useRef<THREE.Group>(null)
+function MobiusCard({ coord = 0.0, length = 1.0, height = 0.5 }: MobiusCardProps) {
+  const imageRef = useRef<THREE.Mesh>(null)
   const scroll = useScroll()
+  const [hovered, setHovered] = useState(false)
+  void hovered
 
-  useFrame((state, delta) => {
-    if (!groupRef.current) {
-      return
+  useFrame(() => {
+    if (imageRef.current) {
+      const geometry = imageRef.current.geometry
+      const position = geometry.attributes.position as THREE.BufferAttribute
+      const uv = geometry.attributes.uv as THREE.BufferAttribute
+
+      for (let index = 0; index < position.count; index += 1) {
+        const u = uv.getX(index)
+        const v = uv.getY(index)
+        const circularCoord = coord + scroll.offset + u * length
+        const circularPhase = THREE.MathUtils.euclideanModulo(circularCoord, 1)
+        const baseAngle = circularCoord * Math.PI * 2
+        const angle = baseAngle + MOBIUS_ANGLE_OFFSET
+        const amplitude = 0.3 + Math.cos(baseAngle) * 0.1
+        const centerX = Math.sin(angle)
+        const centerY = Math.sin(angle * 2) * amplitude
+        const centerZ = -Math.cos(angle)
+        const startTwist = 1 - THREE.MathUtils.smoothstep(
+          circularPhase,
+          0,
+          MOBIUS_ENDPOINT_TWIST_WIDTH,
+        )
+        const endTwist = -THREE.MathUtils.smoothstep(
+          circularPhase,
+          1 - MOBIUS_ENDPOINT_TWIST_WIDTH,
+          1,
+        )
+        const twist = (startTwist + endTwist) * Math.PI * 0.5
+        const crossSectionOffset = (v - 0.5) * height
+        const tangentX = Math.cos(angle)
+        const tangentZ = Math.sin(angle)
+        const x = centerX - tangentZ * Math.sin(twist) * crossSectionOffset
+        const y = centerY + Math.cos(twist) * crossSectionOffset
+        const z = centerZ + tangentX * Math.sin(twist) * crossSectionOffset
+
+        position.setXYZ(index, x, y, z)
+      }
+
+      position.needsUpdate = true
+      geometry.computeBoundingSphere()
     }
+  })
 
-    groupRef.current.rotation.y = -scroll.offset * Math.PI * 2
+  return (
+    <Image
+      ref={imageRef}
+      url={CARD_IMAGE_URL}
+      scale={[1, 1]}
+      radius={0.08}
+      transparent
+      side={THREE.DoubleSide}
+      onPointerOver={(event) => {
+        event.stopPropagation()
+        setHovered(true)
+      }}
+      onPointerOut={() => setHovered(false)}>
+      <planeGeometry args={[1, 1, 100, 10]} />
+    </Image>
+  )
+}
+
+function MobiusCarousel({ count = 8 }) {
+  useFrame((state, delta) => {
     state.events.update?.()
 
     state.camera.position.x = THREE.MathUtils.damp(
@@ -48,80 +106,26 @@ function Rig({ children }: { children: ReactNode }) {
     state.camera.lookAt(0, 0, 0)
   })
 
-  return (
-    <group ref={groupRef} rotation={[0, 0, 0.15]}>
-      {children}
-    </group>
-  )
-}
-
-function Carousel({ count = 8, radius = 1.4 }) {
   return Array.from({ length: count }, (_, index) => {
-    const angle = (index / count) * Math.PI * 2
-    const position: [number, number, number] = [
-      Math.sin(angle) * radius,
-      0,
-      Math.cos(angle) * radius,
-    ]
-    const rotation: [number, number, number] = [0, Math.PI + angle, 0]
+    const cardLength = MOBIUS_CARD_LENGTH_RATIO / count
 
-    return <Card key={index} position={position} rotation={rotation} />
-  })
-}
-
-function Card({ position, rotation }: CardProps) {
-  const groupRef = useRef<THREE.Group>(null)
-  const imageRef = useRef<THREE.Mesh>(null)
-  const [hovered, setHovered] = useState(false)
-
-  useFrame((_state, delta) => {
-    if (groupRef.current) {
-      const targetScale = hovered ? 1.15 : 1
-
-      groupRef.current.scale.setScalar(
-        THREE.MathUtils.damp(groupRef.current.scale.x, targetScale, 10, delta),
-      )
-    }
-
-    if (imageRef.current) {
-      const material = imageRef.current.material as ImageMaterial
-
-      material.radius = THREE.MathUtils.damp(
-        material.radius,
-        hovered ? 0.18 : 0.08,
-        8,
-        delta,
-      )
-      material.zoom = THREE.MathUtils.damp(
-        material.zoom,
-        hovered ? 1 : 1.35,
-        8,
-        delta,
-      )
-    }
-  })
-
-  return (
-    <group ref={groupRef} position={position} rotation={rotation}>
-      <Image
-        ref={imageRef}
-        url={CARD_IMAGE_URL}
-        scale={[1, 1]}
-        transparent
-        side={THREE.DoubleSide}
-        onPointerOver={(event) => {
-          event.stopPropagation()
-          setHovered(true)
-        }}
-        onPointerOut={() => setHovered(false)}
+    return (
+      <MobiusCard
+        key={index}
+        coord={index / count}
+        length={cardLength}
+        height={cardLength * Math.PI * 2}
       />
-    </group>
-  )
+    )
+  })
 }
 
 export function MainCanvas() {
   return (
-    <Canvas className="main-canvas" camera={{ position: [0, 0, 10], fov: 15 }}>
+    <Canvas
+      className="main-canvas"
+      camera={{ position: [0, 0, 10], fov: 10, near: 0.1, far: 50 }}
+    >
       <color attach="background" args={["#08111f"]} />
       <fog attach="fog" args={["#08111f", 8.5, 12]} />
       <ScrollControls
@@ -129,9 +133,7 @@ export function MainCanvas() {
         infinite
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        <Rig>
-          <Carousel />
-        </Rig>
+        <MobiusCarousel />
       </ScrollControls>
     </Canvas>
   )
