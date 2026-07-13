@@ -309,17 +309,22 @@ function SelectedMobiusCard({
           SELECTED_CARD_CAMERA_DISTANCE,
         ),
     )
-    const cardSize = Math.min(
-      viewport.height * SELECTED_CARD_SIZE,
-      viewport.width * 0.45,
-    )
+
+    const isTabletOrMobile = window.innerWidth <= 1100
+    const isPortrait = viewport.height > viewport.width
+
+    const cardSize = (isPortrait || isTabletOrMobile)
+    ? Math.min(viewport.width * 0.75, viewport.height * 0.4) 
+    : Math.min(viewport.height * SELECTED_CARD_SIZE, viewport.width * 0.45) 
 
     right.current.setFromMatrixColumn(state.camera.matrixWorld, 0).normalize()
     up.current.setFromMatrixColumn(state.camera.matrixWorld, 1).normalize()
-    center.current.addScaledVector(
-      right.current,
-      -viewport.width * SELECTED_CARD_LEFT_OFFSET,
-    )
+
+    if (isPortrait || isTabletOrMobile) {
+      center.current.addScaledVector(up.current, viewport.height * 0.15)
+    } else {
+      center.current.addScaledVector(right.current, -viewport.width * SELECTED_CARD_LEFT_OFFSET)
+    }
 
     carouselRef.current?.updateWorldMatrix(true, false)
 
@@ -545,7 +550,7 @@ type SelectedCardTextOverlayProps = {
 function SelectedCardTextOverlay({ visible }: SelectedCardTextOverlayProps) {
   return (
     <aside
-      className="selection-info"
+      className="selection-info ${visible ? 'is-visible' : ''}"
       aria-hidden={!visible}
     >
       <motion.ul
@@ -578,6 +583,7 @@ function SelectedCardTextOverlay({ visible }: SelectedCardTextOverlayProps) {
               posuere erat a ante venenatis dapibus posuere velit aliquet.
               Donec sed odio dui, sed posuere consectetur est at lobortis.
             </p>
+            <br/>
           </motion.div>
         </li>
       </motion.ul>
@@ -829,7 +835,6 @@ export function MainCanvas() {
     if (selectedIndex !== null) {
       return
     }
-
     event.preventDefault()
     carouselTargetRotationRef.current +=
       event.deltaY * WHEEL_ROTATION_SENSITIVITY
@@ -847,6 +852,7 @@ export function MainCanvas() {
           }
         }}
       >
+        
         <color attach="background" args={["#667889"]} />
         <fog attach="fog" args={["#667889", 8.5, 12]} />
         <Suspense fallback={null}>

@@ -8,12 +8,23 @@ export function App() {
       <Header />
       <motion.main
         className="canvas-shell"
+        style={{ flex: 1, position: 'relative' }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1.0, ease: 'easeOut' }}
       >
-        <MainCanvas />
+      <MainCanvas />
       </motion.main>
+      <footer className="site-footer">
+        <div className="footer-container">
+          <div className="footer-copyright">
+            &copy; {new Date().getFullYear()} World360-AI. All rights reserved.
+          </div>
+          <div className="footer-credits">
+            Powered by <a href="https://visgraf.impa.br/" target="_blank" rel="noopener noreferrer">VISGRAF Lab</a> &amp; <a href="https://eyllo.com/" target="_blank" rel="noopener noreferrer">Eyllo Tech</a>
+          </div>
+        </div>
+      </footer>
     </>
   )
 }
