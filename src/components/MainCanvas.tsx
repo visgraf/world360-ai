@@ -10,9 +10,86 @@ import { motion } from 'motion/react'
 import type { WheelEvent } from 'react'
 import * as THREE from 'three'
 
-const PROJECT_IMAGE_URLS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-  .split('')
-  .map((letter) => `${import.meta.env.BASE_URL}projects/${letter}.png`)
+type CarouselItem = {
+  title: string
+  href: string
+  imageUrl: string
+  summary: string
+  sections: string[]
+}
+
+type ResolvedCarouselItem = CarouselItem & {
+  texture: THREE.Texture
+}
+
+type MobiusCardSelection = {
+  slotIndex: number
+  mesh: THREE.Mesh
+  item: ResolvedCarouselItem
+}
+
+const BASE_URL = import.meta.env.BASE_URL.endsWith('/')
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`
+const CAROUSEL_ITEMS = [
+  {
+    title: 'About',
+    href: `${BASE_URL}about.html`,
+    imageUrl: `${BASE_URL}projects/A.png`,
+    summary:
+      'Meet the World360-AI group, its partnerships, collaborations, and the people building the initiative.',
+    sections: ['What We Do', 'Who We Are', 'Partnership', 'Collaborations'],
+  },
+  {
+    title: 'Highlights',
+    href: `${BASE_URL}highlights.html`,
+    imageUrl: `${BASE_URL}projects/H.png`,
+    summary:
+      'Follow recognitions, updates, and notes from the World360-AI research and production track.',
+    sections: ['Prizes', 'Blog'],
+  },
+  {
+    title: 'Research',
+    href: `${BASE_URL}research.html`,
+    imageUrl: `${BASE_URL}projects/R.png`,
+    summary:
+      'Explore research material around world models, inter-world transitions, sound, and immersive systems.',
+    sections: ['Tech Reports', 'Slides'],
+  },
+  {
+    title: 'Projects',
+    href: `${BASE_URL}projects.html`,
+    imageUrl: `${BASE_URL}projects/P.png`,
+    summary:
+      'Browse prototypes and interactive work from Worlds360 environments to games and immersive experiences.',
+    sections: ['Worlds', 'Games', 'Experiences'],
+  },
+  {
+    title: 'Events',
+    href: `${BASE_URL}events.html`,
+    imageUrl: `${BASE_URL}projects/E.png`,
+    summary:
+      'See public presentations, showcases, seminars, and upcoming sessions connected to World360-AI.',
+    sections: ['Shows', 'Talks'],
+  },
+  {
+    title: 'Media',
+    href: `${BASE_URL}media.html`,
+    imageUrl: `${BASE_URL}projects/M.png`,
+    summary:
+      'Access video channels, playlists, posts, and public media material from the broader project ecosystem.',
+    sections: ['Videos', 'Posts'],
+  },
+  {
+    title: 'References',
+    href: `${BASE_URL}references.html`,
+    imageUrl: `${BASE_URL}projects/R.png`,
+    summary:
+      'Collect related laboratories, platforms, tools, and papers that inform the World360-AI direction.',
+    sections: ['Laboratories', 'Platforms', 'Papers'],
+  },
+] satisfies CarouselItem[]
+const CAROUSEL_IMAGE_URLS = CAROUSEL_ITEMS.map((item) => item.imageUrl)
 const MOBIUS_ANGLE_OFFSET = THREE.MathUtils.degToRad(10)
 const MOBIUS_ENDPOINT_TWIST_WIDTH = 0.16
 const MOBIUS_CARD_LENGTH_RATIO = 0.88
@@ -38,6 +115,7 @@ const FROSTED_GLASS_CAMERA_DISTANCE = SELECTED_CARD_CAMERA_DISTANCE + 0.35
 const FROSTED_GLASS_CLOSED_SCALE = 0.01
 const FROSTED_GLASS_OPEN_SCALE = 4
 const FRONT_PHASE = 0.5
+const MOBIUS_VISIBLE_CARD_COUNT = CAROUSEL_ITEMS.length
 const CAROUSEL_LAYER = 0
 const SELECTED_CARD_LAYER = 1
 const FROSTED_GLASS_LAYER = 2
@@ -72,13 +150,13 @@ const textItemVariants = {
 
 type MobiusCardProps = {
   index: number
-  texture: THREE.Texture
+  item: ResolvedCarouselItem
   coord: number
   length: number
   height: number
   displayOffsetRef: NumericRef
   selectedIndex: number | null
-  onSelectCard: (index: number, mesh: THREE.Mesh, texture: THREE.Texture) => void
+  onSelectCard: (selection: MobiusCardSelection) => void
   onDeselect: () => void
 }
 
@@ -95,7 +173,7 @@ function hasCrossedBackThreshold(slotIndex: number, crossedCount: number, count:
   return crossedCount > 0 && slotIndex >= count - crossedCount
 }
 
-function getSlotProjectIndex(
+function getSlotItemIndex(
   slotIndex: number,
   count: number,
   { fullTurns, crossedCount }: RotationTextureState,
@@ -106,7 +184,7 @@ function getSlotProjectIndex(
 
   return THREE.MathUtils.euclideanModulo(
     fullTurns * count - slotIndex + crossedOffset,
-    PROJECT_IMAGE_URLS.length,
+    CAROUSEL_ITEMS.length,
   )
 }
 
@@ -151,7 +229,7 @@ function getMobiusPoint(
 
 function MobiusCard({
   index,
-  texture,
+  item,
   coord,
   length,
   height,
@@ -219,7 +297,7 @@ function MobiusCard({
   return (
     <Image
       ref={imageRef}
-      texture={texture}
+      texture={item.texture}
       scale={[1, 1]}
       radius={CARD_RADIUS}
       zoom={1}
@@ -240,7 +318,7 @@ function MobiusCard({
         }
 
         if (hovered && imageRef.current) {
-          onSelectCard(index, imageRef.current, texture)
+          onSelectCard({ slotIndex: index, mesh: imageRef.current, item })
         }
       }}>
       <planeGeometry args={[1, 1, 100, 10]} />
@@ -251,7 +329,7 @@ function MobiusCard({
 type SelectedMobiusCardProps = {
   selectedIndex: number | null
   selectedSlotIndexRef: MutableRefObject<number | null>
-  texture: THREE.Texture | null
+  item: ResolvedCarouselItem | null
   count: number
   displayOffsetRef: NumericRef
   selectionPhaseRef: SelectionPhaseRef
@@ -264,7 +342,7 @@ type SelectedMobiusCardProps = {
 function SelectedMobiusCard({
   selectedIndex,
   selectedSlotIndexRef,
-  texture,
+  item,
   count,
   displayOffsetRef,
   selectionPhaseRef,
@@ -429,10 +507,10 @@ function SelectedMobiusCard({
         selectionProgressRef={selectionProgressRef}
         selectedCardAnchorRef={selectedCardAnchorRef}
       />
-      {selectedIndex !== null && texture !== null && (
+      {selectedIndex !== null && item !== null && (
         <Image
           ref={imageRef}
-          texture={texture}
+          texture={item.texture}
           scale={[1, 1]}
           radius={CARD_HOVER_RADIUS}
           zoom={CARD_HOVER_ZOOM}
@@ -545,12 +623,17 @@ function FrostedGlassLayer({
 
 type SelectedCardTextOverlayProps = {
   visible: boolean
+  item: CarouselItem | null
 }
 
-function SelectedCardTextOverlay({ visible }: SelectedCardTextOverlayProps) {
+function SelectedCardTextOverlay({ visible, item }: SelectedCardTextOverlayProps) {
+  if (!item) {
+    return null
+  }
+
   return (
     <aside
-      className="selection-info ${visible ? 'is-visible' : ''}"
+      className={`selection-info${visible ? ' is-visible' : ''}`}
       aria-hidden={!visible}
     >
       <motion.ul
@@ -561,29 +644,33 @@ function SelectedCardTextOverlay({ visible }: SelectedCardTextOverlayProps) {
       >
         <li>
           <motion.div variants={textItemVariants}>
-            <h2>WORLD 360 AI</h2>
+            <h2>{item.title.toUpperCase()}<span className="selection-accent">.</span></h2>
           </motion.div>
         </li>
         <li>
-          <motion.div variants={textItemVariants}>
-            <h2>
-              <span className="selection-accent">TEST</span>
-            </h2>
-          </motion.div>
-        </li>
-        <li>
-          <motion.div variants={textItemVariants}>
-            <h3>Selected Card</h3>
-          </motion.div>
+          <motion.ul className="selection-section-list" variants={textItemVariants}>
+            {item.sections.map((section) => (
+              <li key={section}>{section}</li>
+            ))}
+          </motion.ul>
         </li>
         <li>
           <motion.div variants={textItemVariants}>
             <p className="selection-copy">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
-              posuere erat a ante venenatis dapibus posuere velit aliquet.
-              Donec sed odio dui, sed posuere consectetur est at lobortis.
+              {item.summary}
             </p>
-            <br/>
+          </motion.div>
+        </li>
+        <li>
+          <motion.div variants={textItemVariants}>
+            <a
+              className="selection-action"
+              href={item.href}
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => event.stopPropagation()}
+            >
+              Open {item.title}
+            </a>
           </motion.div>
         </li>
       </motion.ul>
@@ -593,24 +680,26 @@ function SelectedCardTextOverlay({ visible }: SelectedCardTextOverlayProps) {
 
 type MobiusCarouselProps = {
   count?: number
-  selectedIndex: number | null
+  activeSlotIndex: number | null
+  selectedItem: ResolvedCarouselItem | null
   carouselTargetRotationRef: NumericRef
   selectionPhaseRef: SelectionPhaseRef
-  onSelectCard: (index: number) => void
+  onSelectCard: (slotIndex: number, item: ResolvedCarouselItem) => void
   onDeselect: () => void
   onSelectionRest: () => void
 }
 
 function MobiusCarousel({
-  count = 9,
-  selectedIndex,
+  count = MOBIUS_VISIBLE_CARD_COUNT,
+  activeSlotIndex,
+  selectedItem,
   carouselTargetRotationRef,
   selectionPhaseRef,
   onSelectCard,
   onDeselect,
   onSelectionRest,
 }: MobiusCarouselProps) {
-  const projectTextures = useTexture(PROJECT_IMAGE_URLS, (textures) => {
+  const carouselTextures = useTexture(CAROUSEL_IMAGE_URLS, (textures) => {
     for (const texture of textures as THREE.Texture[]) {
       texture.colorSpace = THREE.SRGBColorSpace
     }
@@ -630,11 +719,14 @@ function MobiusCarousel({
     useState<RotationTextureState>({
       fullTurns: 0,
       crossedCount: 0,
-    })
+  })
   const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null)
-  const [selectedTexture, setSelectedTexture] = useState<THREE.Texture | null>(null)
+  const resolvedCarouselItems = CAROUSEL_ITEMS.map((item, index) => ({
+    ...item,
+    texture: carouselTextures[index],
+  }))
 
-  const selectCard = (index: number, mesh: THREE.Mesh, texture: THREE.Texture) => {
+  const selectCard = ({ slotIndex, mesh, item }: MobiusCardSelection) => {
     const position = mesh.geometry.attributes.position as THREE.BufferAttribute
     const sourcePositions = new Float32Array(position.count * 3)
     const point = new THREE.Vector3()
@@ -649,11 +741,10 @@ function MobiusCarousel({
     }
 
     selectedSourcePositionsRef.current = sourcePositions
-    selectedSlotIndexRef.current = index
-    setSelectedSlotIndex(index)
-    setSelectedTexture(texture)
+    selectedSlotIndexRef.current = slotIndex
+    setSelectedSlotIndex(slotIndex)
     selectionProgressRef.current = 0
-    onSelectCard(index)
+    onSelectCard(slotIndex, item)
   }
 
   useFrame((state, delta) => {
@@ -673,7 +764,7 @@ function MobiusCarousel({
     }
 
     if (parallaxRef.current) {
-      const pointerRotationEnabled = selectedIndex === null
+      const pointerRotationEnabled = activeSlotIndex === null
       const targetRotationX = pointerRotationEnabled
         ? BASE_RIG_ROTATION_X + state.pointer.y * POINTER_ROTATION_X
         : BASE_RIG_ROTATION_X
@@ -696,7 +787,7 @@ function MobiusCarousel({
     }
 
     if (
-      selectedIndex !== null &&
+      activeSlotIndex !== null &&
       selectedSlotIndexRef.current !== null &&
       (selectionPhaseRef.current === 'selecting' ||
         selectionPhaseRef.current === 'selected')
@@ -732,7 +823,7 @@ function MobiusCarousel({
       setRotationTextureState(nextTextureState)
     }
 
-    if (selectedIndex === null) {
+    if (activeSlotIndex === null) {
       selectionProgressRef.current = 0
     } else if (selectionPhaseRef.current === 'selecting') {
       selectionProgressRef.current = Math.min(
@@ -756,7 +847,6 @@ function MobiusCarousel({
         selectedSourcePositionsRef.current = null
         selectedSlotIndexRef.current = null
         setSelectedSlotIndex(null)
-        setSelectedTexture(null)
         onSelectionRest()
       }
     }
@@ -770,14 +860,15 @@ function MobiusCarousel({
         <group ref={carouselRef}>
           {Array.from({ length: count }, (_, index) => {
             const cardLength = MOBIUS_CARD_LENGTH_RATIO / count
+            const item = resolvedCarouselItems[
+              getSlotItemIndex(index, count, rotationTextureState)
+            ]
 
             return (
               <MobiusCard
                 key={index}
                 index={index}
-                texture={projectTextures[
-                  getSlotProjectIndex(index, count, rotationTextureState)
-                ]}
+                item={item}
                 coord={index / count}
                 length={cardLength}
                 height={cardLength * Math.PI * 2}
@@ -793,7 +884,7 @@ function MobiusCarousel({
       <SelectedMobiusCard
         selectedIndex={selectedSlotIndex}
         selectedSlotIndexRef={selectedSlotIndexRef}
-        texture={selectedTexture}
+        item={selectedItem}
         count={count}
         displayOffsetRef={displayOffsetRef}
         selectionPhaseRef={selectionPhaseRef}
@@ -807,15 +898,17 @@ function MobiusCarousel({
 }
 
 export function MainCanvas() {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
+  const [selectedSlotIndex, setSelectedSlotIndex] = useState<number | null>(null)
+  const [selectedItem, setSelectedItem] = useState<ResolvedCarouselItem | null>(null)
   const [selectionTextVisible, setSelectionTextVisible] = useState(false)
   const selectionPhaseRef = useRef<SelectionPhase>('idle')
   const carouselTargetRotationRef = useRef(0)
 
-  const selectCard = (index: number) => {
+  const selectCard = (slotIndex: number, item: ResolvedCarouselItem) => {
     selectionPhaseRef.current = 'selecting'
     setSelectionTextVisible(true)
-    setSelectedIndex(index)
+    setSelectedSlotIndex(slotIndex)
+    setSelectedItem(item)
   }
 
   const deselectCard = () => {
@@ -828,11 +921,12 @@ export function MainCanvas() {
   const clearSelection = () => {
     selectionPhaseRef.current = 'idle'
     setSelectionTextVisible(false)
-    setSelectedIndex(null)
+    setSelectedSlotIndex(null)
+    setSelectedItem(null)
   }
 
   const rotateCarousel = (event: WheelEvent<HTMLDivElement>) => {
-    if (selectedIndex !== null) {
+    if (selectedSlotIndex !== null) {
       return
     }
     event.preventDefault()
@@ -847,7 +941,7 @@ export function MainCanvas() {
         camera={{ position: [0, 0, 10], fov: 10, near: 0.1, far: 50 }}
         onWheel={rotateCarousel}
         onPointerMissed={() => {
-          if (selectedIndex !== null) {
+          if (selectedSlotIndex !== null) {
             deselectCard()
           }
         }}
@@ -857,7 +951,8 @@ export function MainCanvas() {
         <fog attach="fog" args={["#667889", 8.5, 12]} />
         <Suspense fallback={null}>
           <MobiusCarousel
-            selectedIndex={selectedIndex}
+            activeSlotIndex={selectedSlotIndex}
+            selectedItem={selectedItem}
             carouselTargetRotationRef={carouselTargetRotationRef}
             selectionPhaseRef={selectionPhaseRef}
             onSelectCard={selectCard}
@@ -866,7 +961,7 @@ export function MainCanvas() {
           />
         </Suspense>
       </Canvas>
-      <SelectedCardTextOverlay visible={selectionTextVisible} />
+      <SelectedCardTextOverlay visible={selectionTextVisible} item={selectedItem} />
     </>
   )
 }
