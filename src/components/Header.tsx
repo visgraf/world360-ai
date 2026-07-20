@@ -11,28 +11,28 @@ export function Header() {
           World360-AI
         </a>
         
-        <a className="nav-link" href={`${baseUrl}about.html`}>
+        <a className="nav-link" href={`https://visgraflab.impa.br/world360-ai/wp/about/`}>
           About
         </a>
-        <a className="nav-link" href={`${baseUrl}highlights.html`}>
+        <a className="nav-link" href={`https://visgraflab.impa.br/world360-ai/wp/highlights/`}>
           Highlights
         </a>
-        <a className="nav-link" href={`${baseUrl}research.html`}>
+        <a className="nav-link" href={`https://visgraflab.impa.br/world360-ai/wp/research/`}>
           Research
         </a>
-        <a className="nav-link" href={`${baseUrl}projects.html`}>
+        <a className="nav-link" href={`https://visgraflab.impa.br/world360-ai/wp/projects/`}>
           Projects
         </a>
-        <a className="nav-link" href={`${baseUrl}events.html`}>
+        <a className="nav-link" href={`https://visgraflab.impa.br/world360-ai/wp/events/`}>
           Events
         </a>
-        <a className="nav-link" href={`${baseUrl}media.html`}>
+        <a className="nav-link" href={`https://visgraflab.impa.br/world360-ai/wp/media/`}>
           Media
         </a>
-        <a className="nav-link" href={`${baseUrl}references.html`}>
+        <a className="nav-link" href={`https://visgraflab.impa.br/world360-ai/wp/references/`}>
           References
         </a>
-        <a className="nav-link internal" href={`${baseUrl}internal.html`}>
+        <a className="nav-link internal" href={`https://visgraflab.impa.br/world360-ai/wp/internal/`}>
           Internal
         </a>
       </nav>
