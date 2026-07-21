@@ -34,7 +34,7 @@ const BASE_URL = import.meta.env.BASE_URL.endsWith('/')
 const CAROUSEL_ITEMS = [
   {
     title: 'About',
-    href: `${BASE_URL}about.html`,
+    href: `https://visgraflab.impa.br/world360-ai/wp/about/`,
     imageUrl: `${BASE_URL}projects/A.png`,
     summary:
       'Meet the World360-AI group, its partnerships, collaborations, and the people building the initiative.',
@@ -42,7 +42,7 @@ const CAROUSEL_ITEMS = [
   },
   {
     title: 'Highlights',
-    href: `${BASE_URL}highlights.html`,
+    href: `https://visgraflab.impa.br/world360-ai/wp/highlights/`,
     imageUrl: `${BASE_URL}projects/H.png`,
     summary:
       'Follow recognitions, updates, and notes from the World360-AI research and production track.',
@@ -50,7 +50,7 @@ const CAROUSEL_ITEMS = [
   },
   {
     title: 'Research',
-    href: `${BASE_URL}research.html`,
+    href: `https://visgraflab.impa.br/world360-ai/wp/research/`,
     imageUrl: `${BASE_URL}projects/R.png`,
     summary:
       'Explore research material around world models, inter-world transitions, sound, and immersive systems.',
@@ -58,7 +58,7 @@ const CAROUSEL_ITEMS = [
   },
   {
     title: 'Projects',
-    href: `${BASE_URL}projects.html`,
+    href: `https://visgraflab.impa.br/world360-ai/wp/projects/`,
     imageUrl: `${BASE_URL}projects/P.png`,
     summary:
       'Browse prototypes and interactive work from Worlds360 environments to games and immersive experiences.',
@@ -66,7 +66,7 @@ const CAROUSEL_ITEMS = [
   },
   {
     title: 'Events',
-    href: `${BASE_URL}events.html`,
+    href: `https://visgraflab.impa.br/world360-ai/wp/events/`,
     imageUrl: `${BASE_URL}projects/E.png`,
     summary:
       'See public presentations, showcases, seminars, and upcoming sessions connected to World360-AI.',
@@ -74,7 +74,7 @@ const CAROUSEL_ITEMS = [
   },
   {
     title: 'Media',
-    href: `${BASE_URL}media.html`,
+    href: `https://visgraflab.impa.br/world360-ai/wp/media/`,
     imageUrl: `${BASE_URL}projects/M.png`,
     summary:
       'Access video channels, playlists, posts, and public media material from the broader project ecosystem.',
@@ -82,7 +82,7 @@ const CAROUSEL_ITEMS = [
   },
   {
     title: 'References',
-    href: `${BASE_URL}references.html`,
+    href: `https://visgraflab.impa.br/world360-ai/wp/references/`,
     imageUrl: `${BASE_URL}projects/R.png`,
     summary:
       'Collect related laboratories, platforms, tools, and papers that inform the World360-AI direction.',
